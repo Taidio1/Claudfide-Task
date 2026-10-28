@@ -12,6 +12,7 @@ from citywheels.prompts import build_system_prompt
 from citywheels.tools import Toolbox
 
 EXIT_COMMANDS = frozenset({"exit", "quit"})
+RESET_COMMAND = "/reset"
 
 
 def build_agent(provider: str | None = None, model: ChatModel | None = None) -> Agent:
@@ -30,7 +31,7 @@ def _ask_and_print(agent: Agent, question: str, verbose: bool) -> None:
 
 
 def _interactive(agent: Agent, verbose: bool) -> None:
-    print("CityWheels help desk. Type 'exit' or 'quit' to leave.")
+    print(f"CityWheels help desk. Type '{RESET_COMMAND}' to start over, 'exit' or 'quit' to leave.")
     while True:
         try:
             line = input("You: ").strip()
@@ -41,6 +42,11 @@ def _interactive(agent: Agent, verbose: bool) -> None:
             continue
         if line.lower() in EXIT_COMMANDS:
             return
+        if line.lower() == RESET_COMMAND:
+            # Lets a customer switch topic without earlier bookings steering the answers.
+            agent.reset()
+            print("Agent: Conversation cleared.")
+            continue
         print("Agent: ", end="")
         _ask_and_print(agent, line, verbose)
 

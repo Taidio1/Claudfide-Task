@@ -88,3 +88,28 @@ def test_interactive_mode_ends_cleanly_on_eof(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr("builtins.input", raise_eof)
 
     assert main([], model=FakeChatModel([])) == 0
+
+
+def test_interactive_mode_keeps_memory_between_turns(monkeypatch: pytest.MonkeyPatch) -> None:
+    inputs = iter(["Refund for CW-1007?", "And tomorrow?", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
+    model = FakeChatModel([AssistantMessage("186.00 EUR"), AssistantMessage("168.00 EUR")])
+
+    main([], model=model)
+
+    second_call = model.calls[1]
+    assert {"role": "user", "content": "Refund for CW-1007?"} in second_call
+    assert {"role": "assistant", "content": "186.00 EUR"} in second_call
+
+
+def test_reset_command_clears_memory(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inputs = iter(["Refund for CW-1007?", "/reset", "Opening hours?", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
+    model = FakeChatModel([AssistantMessage("186.00 EUR"), AssistantMessage("08:00-20:00")])
+
+    main([], model=model)
+
+    assert "Conversation cleared." in capsys.readouterr().out
+    assert [m["role"] for m in model.calls[1]] == ["system", "user"]
