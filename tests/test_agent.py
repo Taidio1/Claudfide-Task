@@ -37,7 +37,7 @@ def test_agent_runs_tool_and_returns_final_answer() -> None:
     tool_messages = [m for m in model.calls[1] if m["role"] == "tool"]
     assert len(tool_messages) == 1
     assert tool_messages[0]["tool_call_id"] == "call_1"
-    assert json.loads(tool_messages[0]["content"])["total_refund_eur"] == 340.0
+    assert json.loads(tool_messages[0]["content"])["total_refund_eur"] == "340.00"
 
 
 def test_agent_handles_multiple_tool_calls_in_one_reply() -> None:

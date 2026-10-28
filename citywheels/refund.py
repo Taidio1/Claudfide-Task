@@ -2,10 +2,11 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, tzinfo
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 from typing import Any
 
 from citywheels.bookings import Booking
+from citywheels.money import format_money, to_money
 
 FULL_REFUND_HOURS = 48
 HALF_REFUND_HOURS = 24
@@ -13,7 +14,6 @@ FULL_REFUND_PERCENT = 100
 HALF_REFUND_PERCENT = 50
 NO_REFUND_PERCENT = 0
 PERCENT_DIVISOR = Decimal(100)
-CENT = Decimal("0.01")
 SECONDS_PER_HOUR = 3600
 
 CANCELLABLE_STATUSES = frozenset({"confirmed"})
@@ -31,11 +31,6 @@ ALREADY_STARTED_REASON = "The rental has already started."
 
 class CancellationTimeError(ValueError):
     """The requested cancellation time is unusable (in the past or malformed)."""
-
-
-def to_money(value: Decimal) -> Decimal:
-    """Single rounding point for all amounts; half-up matches how shops round cents."""
-    return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
 @dataclass(frozen=True)
@@ -66,12 +61,12 @@ class RefundResult:
             "cancel_at": self.cancel_at.isoformat(),
             "hours_before_start": self.hours_before_start,
             "refund_percent": self.refund_percent,
-            "rental_price_eur": float(self.rental_price_eur),
-            "rental_refund_eur": float(self.rental_refund_eur),
-            "booking_fee_eur": float(self.booking_fee_eur),
-            "booking_fee_refund_eur": float(self.booking_fee_refund_eur),
-            "deposit_refund_eur": float(self.deposit_refund_eur),
-            "total_refund_eur": float(self.total_refund_eur),
+            "rental_price_eur": format_money(self.rental_price_eur),
+            "rental_refund_eur": format_money(self.rental_refund_eur),
+            "booking_fee_eur": format_money(self.booking_fee_eur),
+            "booking_fee_refund_eur": format_money(self.booking_fee_refund_eur),
+            "deposit_refund_eur": format_money(self.deposit_refund_eur),
+            "total_refund_eur": format_money(self.total_refund_eur),
             "refund_method": self.refund_method,
             "refund_note": self.refund_note,
         }

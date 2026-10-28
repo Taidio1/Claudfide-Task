@@ -5,13 +5,14 @@ from typing import Any
 
 import pytest
 
-from citywheels.bookings import Booking, BookingRepository
+from citywheels.bookings import PAYMENT_METHODS, Booking, BookingRepository
 from citywheels.config import BOOKINGS_PATH, NOW
+from citywheels.money import format_money, to_money
 from citywheels.refund import (
+    REFUND_NOTES,
     CancellationTimeError,
     calculate_refund,
     parse_cancel_at,
-    to_money,
 )
 
 ZERO = Decimal("0.00")
@@ -41,6 +42,15 @@ def booking_starting_in(delta: timedelta, **overrides: Any) -> Booking:
 def test_to_money_rounds_half_up() -> None:
     assert to_money(Decimal("11.525")) == Decimal("11.53")
     assert to_money(Decimal("5")) == Decimal("5.00")
+
+
+def test_format_money_always_has_two_decimals() -> None:
+    assert format_money(Decimal("40.0")) == "40.00"
+    assert format_money(Decimal("11.525")) == "11.53"
+
+
+def test_every_payment_method_has_a_refund_note() -> None:
+    assert set(REFUND_NOTES) == PAYMENT_METHODS
 
 
 def test_full_refund_48h_or_more() -> None:
@@ -169,8 +179,8 @@ def test_to_dict_is_json_ready() -> None:
     data = calculate_refund(make_booking(), NOW).to_dict()
 
     assert data["cancel_at"] == NOW.isoformat()
-    assert data["total_refund_eur"] == 90.0
-    assert isinstance(data["total_refund_eur"], float)
+    assert data["total_refund_eur"] == "90.00"
+    assert data["booking_fee_refund_eur"] == "0.00"
     assert data["can_cancel"] is True
 
 

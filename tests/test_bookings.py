@@ -3,7 +3,12 @@ from decimal import Decimal
 
 import pytest
 
-from citywheels.bookings import Booking, BookingRepository, normalize_booking_id
+from citywheels.bookings import (
+    Booking,
+    BookingDataError,
+    BookingRepository,
+    normalize_booking_id,
+)
 from citywheels.config import BOOKINGS_PATH
 
 
@@ -69,9 +74,9 @@ def test_to_dict_is_json_ready() -> None:
         "start": "2026-06-20T09:00:00+02:00",
         "end": "2026-06-21T09:00:00+02:00",
         "add_ons": ["child_seat"],
-        "rental_price_eur": 23.0,
-        "booking_fee_eur": 2.0,
-        "deposit_eur": 50.0,
+        "rental_price_eur": "23.00",
+        "booking_fee_eur": "2.00",
+        "deposit_eur": "50.00",
         "paid_with": "voucher",
     }
 
@@ -103,3 +108,24 @@ def test_from_record_parses_amounts_exactly_via_str() -> None:
 
 def test_normalize_rejects_non_ascii_digits() -> None:
     assert normalize_booking_id("١٠٠٢") is None
+
+
+@pytest.mark.parametrize(("field", "value"), [("status", "pending"), ("paid_with", "cash")])
+def test_from_record_rejects_unknown_values(field: str, value: str) -> None:
+    record = {
+        "id": "CW-1",
+        "status": "confirmed",
+        "bike_type": "city",
+        "bikes": 1,
+        "start": "2026-06-20T09:00:00+02:00",
+        "end": "2026-06-21T09:00:00+02:00",
+        "add_ons": [],
+        "rental_price_eur": 20,
+        "booking_fee_eur": 2,
+        "deposit_eur": 50,
+        "paid_with": "card",
+        field: value,
+    }
+
+    with pytest.raises(BookingDataError, match=f"CW-1: unknown {field} '{value}'"):
+        Booking.from_record(record)

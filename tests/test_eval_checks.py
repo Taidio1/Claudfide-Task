@@ -5,11 +5,12 @@ from pathlib import Path
 
 import pytest
 
+from citywheels.agent import MAX_STEPS
 from citywheels.cli import build_agent
 from citywheels.config import STAFF_EMAIL, STAFF_PHONE
 from citywheels.llm import AssistantMessage, LLMError, ToolCall
-from eval.checks import EvalCase, check_case, extract_amounts, load_cases
-from eval.run_eval import CaseResult, ReportMeta, format_report, run_case
+from eval.checks import EvalCase, check_case, contains_phrase, extract_amounts, load_cases
+from eval.run_eval import STEP_LIMIT_REASON, CaseResult, ReportMeta, format_report, run_case
 from tests.fakes import FakeChatModel
 
 QUESTIONS_PATH = Path(__file__).resolve().parent.parent / "eval" / "questions.toml"
@@ -17,8 +18,35 @@ QUESTIONS_PATH = Path(__file__).resolve().parent.parent / "eval" / "questions.to
 
 def test_extract_amounts_formats() -> None:
     assert extract_amounts("You get 340 EUR") == {Decimal("340")}
-    assert extract_amounts("Total: 340.00") == {Decimal("340")}
-    assert extract_amounts("About 11,53 EUR") == {Decimal("11.53")}
+    assert extract_amounts("Total: €340.00") == {Decimal("340")}
+    assert extract_amounts("About 11,53 euro") == {Decimal("11.53")}
+    assert extract_amounts("EUR 5 and 20 euros") == {Decimal("5"), Decimal("20")}
+
+
+def test_extract_amounts_ignores_numbers_without_currency() -> None:
+    assert extract_amounts("Riders from 16 years, 33 hours before, 2 bikes, Europe 7") == set()
+
+
+@pytest.mark.parametrize(
+    ("text", "phrase", "expected"),
+    [
+        ("We open at 8:00.", "8:00", True),
+        ("We close at 18:00.", "8:00", False),
+        ("We close at 19:00.", "9:00", False),
+        ("Sorry, I can’t do that.", "can't", True),
+        ("NOT FOUND", "not found", True),
+    ],
+)
+def test_contains_phrase_matches_whole_words(text: str, phrase: str, expected: bool) -> None:
+    assert contains_phrase(text, phrase) is expected
+
+
+def test_check_case_forbidden_tool() -> None:
+    case = EvalCase(id="c", turns=("q",), must_not_call=("calculate_refund",))
+    assert check_case(case, "Which booking?", {"search_policies"}) == []
+    assert check_case(case, "x", {"calculate_refund"}) == [
+        "forbidden tool called: calculate_refund"
+    ]
 
 
 def test_check_case_pass() -> None:
@@ -119,6 +147,22 @@ def test_run_case_collects_tools_across_turns() -> None:
     assert result.passed
     assert result.answer == "Still 340 EUR."
     assert result.tool_names == ("calculate_refund",)
+
+
+def test_run_case_fails_when_step_limit_is_hit() -> None:
+    args = json.dumps({"booking_id": "CW-1002"})
+    model = FakeChatModel(
+        [
+            AssistantMessage(None, (ToolCall(f"c{i}", "get_booking", args),))
+            for i in range(MAX_STEPS)
+        ]
+    )
+    # The fallback answer names the staff, so the refusal check alone would pass.
+    case = EvalCase(id="c", turns=("q",), expect_refusal=True)
+
+    result = run_case(case, build_agent(model=model))
+
+    assert result.reasons == (STEP_LIMIT_REASON,)
 
 
 def test_run_case_records_llm_error() -> None:

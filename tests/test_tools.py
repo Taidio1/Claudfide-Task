@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from typing import Any
 
 import pytest
@@ -32,7 +33,7 @@ def test_get_booking_not_found(toolbox: Toolbox) -> None:
 def test_calculate_refund_via_execute(toolbox: Toolbox) -> None:
     result = run(toolbox, "calculate_refund", '{"booking_id":"cw1002"}')
     assert result["found"] is True
-    assert result["total_refund_eur"] == 340.0
+    assert result["total_refund_eur"] == "340.00"
 
 
 def test_calculate_refund_unknown_booking(toolbox: Toolbox) -> None:
@@ -41,7 +42,7 @@ def test_calculate_refund_unknown_booking(toolbox: Toolbox) -> None:
 
 def test_calculate_refund_with_later_cancel_at(toolbox: Toolbox) -> None:
     result = toolbox.calculate_refund("CW-1002", "2026-06-11T09:00:00+02:00")
-    assert result["total_refund_eur"] < 340.0
+    assert Decimal(result["total_refund_eur"]) < Decimal("340")
 
 
 def test_search_policies_returns_sources(toolbox: Toolbox) -> None:
@@ -110,7 +111,7 @@ def test_execute_non_string_argument(toolbox: Toolbox) -> None:
 
 def test_execute_null_cancel_at_means_now(toolbox: Toolbox) -> None:
     result = run(toolbox, "calculate_refund", '{"booking_id":"CW-1002","cancel_at":null}')
-    assert result["total_refund_eur"] == 340.0
+    assert result["total_refund_eur"] == "340.00"
 
 
 def test_handler_type_error_is_not_swallowed(
