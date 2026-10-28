@@ -22,6 +22,7 @@ from eval.checks import EvalCase, check_case, load_cases
 EVAL_DIR = Path(__file__).resolve().parent
 DEFAULT_QUESTIONS = EVAL_DIR / "questions.toml"
 DEFAULT_OUT = EVAL_DIR / "results.md"
+STEP_LIMIT_REASON = "agent hit the step limit"
 
 
 @dataclass(frozen=True)
@@ -51,16 +52,21 @@ def run_case(case: EvalCase, agent: Agent) -> CaseResult:
     started = time.perf_counter()
     tool_names: list[str] = []
     answer = ""
+    hit_step_limit = False
     try:
         for question in case.turns:
             result = agent.ask(question)
             answer = result.answer
             tool_names.extend(call.name for call in result.tool_calls)
+            hit_step_limit = hit_step_limit or result.hit_step_limit
     except LLMError as exc:
         # A provider failure is a failed case, not a reason to abort the whole run.
         reasons: tuple[str, ...] = (f"LLM error: {exc}",)
     else:
         reasons = tuple(check_case(case, answer, set(tool_names)))
+        # The fallback answer names the staff, so it could pass a refusal check by accident.
+        if hit_step_limit:
+            reasons += (STEP_LIMIT_REASON,)
     return CaseResult(
         case.id, case.turns, answer, reasons, tuple(tool_names), time.perf_counter() - started
     )

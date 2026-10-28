@@ -72,58 +72,81 @@ session prints the error and keeps going.
 | `search_policies(query)` | Policy Markdown files are split into `##` sections once at start-up and ranked with a small BM25 implementation (`policies.py`); the top 3 sections are returned with their source, e.g. `faq.md#Are there age limits?`. |
 | `get_booking(booking_id)` | Bookings are loaded once into a dict. IDs are normalised (`cw1002`, `#CW-1002`, `1002` → `CW-1002`); unknown IDs return `{"found": false, ...}` instead of failing. |
 | `calculate_refund(booking_id, cancel_at?)` | Applies the cancellation rules in `refund.py`: 100% at ≥ 48 h, 50% at ≥ 24 h, 0% below (boundaries belong to the higher tier, compared on exact `timedelta`), booking fee never refunded, deposit always refunded, only `confirmed` bookings can be cancelled, card vs voucher refund method. Money uses `Decimal` with one rounding point. `cancel_at` supports hypothetical times for follow-ups. |
+| `get_opening_hours(start_date?)` | Extra tool. Returns the hours for 7 days in a row from today (or a given date), with the season (April–October vs November–March), winter Sundays and holidays already applied in `hours.py`. A week rather than one day, so "on Saturday" needs no date arithmetic from the model. Added after the model kept choosing the wrong season (see Evaluation). |
+
+Money is returned to the model as strings with two decimals (`"340.00"`, see `money.py`),
+so there is no float for it to re-round or print as `340.0`. Bookings are validated when they
+are loaded: an unknown status or payment method stops start-up with a clear error instead of
+failing later inside a refund.
 
 `Toolbox.execute` validates arguments before calling a tool. Invalid JSON, unknown tools,
-missing or non-string arguments and cancellation times in the past come back to the model as
+missing or non-string arguments, invalid dates and cancellation times in the past come back to
+the model as
 `{"error": ...}` so it can correct itself. Real bugs are not caught and stay visible.
 
 **Instructions to the model** (`citywheels/prompts.py`). The system prompt injects the current
 time (with weekday and month) and sets these rules: answer only from tool results; search
-the policies before answering about rules, and apply date-dependent rules to today; look up
+the policies before answering about rules; take opening hours from `get_opening_hours`; look up
 bookings and never invent details; get every amount from `calculate_refund` and copy it
 exactly; only inform, never offer to cancel; for out-of-scope questions say so and give the
 staff contact; reply in the language of the customer's latest message.
 
-**Tests** (`tests/`, 134 tests, `pytest`). Every refund rule is covered, including exact and
+**Tests** (`tests/`, 164 tests, `pytest`). Every refund rule is covered, including exact and
 ±1 minute boundaries, every non-cancellable status, voucher vs card, zero booking fee,
 rounding, and all sample bookings. Tests also cover booking lookup and normalisation, policy
-ranking, tool dispatch errors, and the agent loop and CLI with a scripted `FakeChatModel`
+ranking, opening hours (season boundaries, winter Sunday, holidays), booking data validation,
+tool dispatch errors, the evaluation checks, and the agent loop and CLI with a scripted
+`FakeChatModel`
 (tool call → result fed back → final answer, step limit, memory, reset, API errors and
 recovery from them). No test uses the network.
 
 ## Evaluation
 
-`eval/questions.toml` holds 14 cases: policies, five refund calculations (including the
-exact 24 h boundary of CW-1010, a voucher booking and a two-turn follow-up), an unknown and a
-completed booking, and three requests the agent must refuse or hand over to the staff. The
-checks in `eval/checks.py` are deterministic and do not use a model as a judge:
+`eval/questions.toml` holds 21 cases: policies, opening hours today and on a holiday, seven
+refund calculations (100%, 50% and 0% tiers, the exact 24 h boundary of CW-1010, a voucher
+booking, a booking id typed as `cw1001`, and a two-turn follow-up), an unknown, a completed and
+an in-progress booking, a refund question without a booking number, a question in Polish, and
+four requests the agent must refuse or hand over to the staff (one of them a prompt
+injection). The checks in `eval/checks.py` are deterministic and do not use a model as a judge:
 
-- expected tool calls,
-- amounts compared as `Decimal` (`340` equals `340,00`),
-- required and forbidden phrases,
-- the staff contact present when a refusal is expected.
+- expected tool calls, and tools that must not be called (no booking number, no lookup),
+- amounts next to a currency (`EUR`, `euro`, `€`), compared as `Decimal` (`340 EUR` equals
+  `€340,00`), so an age or a number of hours cannot satisfy an amount check,
+- required and forbidden phrases, matched as whole words (`8:00` does not match `18:00`),
+- the staff contact present when a refusal is expected,
+- a case fails if the agent hits its step limit, because the fallback answer names the staff
+  and would otherwise pass a refusal check.
 
 Latest runs (committed):
 
 | Report | Model | Result | Time | Tool calls |
 | --- | --- | --- | --- | --- |
-| `eval/results.md` | gemini-3.5-flash-lite | **14/14** | 584 s | 13 |
-| `eval/results-grok.md` | grok-4.20-0309-non-reasoning | **13/14** | 28 s | 19 |
+| `eval/results.md` | gemini-3.5-flash-lite | **21/21** | 273 s | 19 |
+| `eval/results-grok.md` | grok-4.20-0309-non-reasoning | **21/21** | 45 s | 26 |
 
-Earlier runs: Gemini 13/14, then 14/14 after a checker fix. Grok scored 14/14 on the first
-version of the suite, then 12/14 and 13/14 once I made it stricter (see below).
+The Gemini run used `--delay 10`: without it the free tier answered 11 of 21 cases with
+HTTP 429. Those were rate limits, not agent errors, and the runner records them as failed
+cases instead of stopping. Earlier, on 15 cases, both models scored 15/15.
+
+Earlier runs, on 14 cases: Gemini 13/14, then 14/14 after a checker fix. Grok 14/14 on the
+first version of the suite, then 12/14 and 13/14 once I made it stricter, then 15/15 after
+the opening-hours tool (see below). Gemini's time varies a lot with free-tier rate limits
+(148–584 s for the same suite).
 
 **What failed, and what I changed:**
 
-- **Grok, `opening_hours_saturday` (still failing).** The question is taken word for word
-  from the task's README: "What time do you open on Saturday?". Grok answers "09:00
-  (November to March schedule applies in June)": it applies the winter rule although the
+- **Grok, `opening_hours_saturday` (fixed in code).** The question is taken word for word
+  from the task's README: "What time do you open on Saturday?". Grok answered "09:00
+  (November to March schedule applies in June)": it applied the winter rule although the
   prompt gives the date. My first version of the case said "It's June" in the question,
-  which hid the problem. I removed that hint, made the prompt spell out the month, and told
-  the model to apply date-dependent rules to the current date. Gemini now answers correctly
-  (08:00–20:00); Grok still does not. I think Grok latches onto "Monday to Saturday" in the
-  winter line. A fix that does not rely on the model would be a tool, or a pre-processing
-  step, that returns only the rules valid today.
+  which hid the problem. Spelling out the month in the prompt and telling the model to apply
+  date-dependent rules to the current date fixed Gemini but not Grok. Prompting could not
+  make this reliable, so I moved the rule into code, as refunds already were: the
+  `get_opening_hours` tool returns the hours valid on each day, and the model only reads
+  them. I also added `christmas_closed`, which needs a date outside the current week.
+- **Checker too strict on opening hours.** After the fix Grok answered "We open at 08:00 on
+  Saturday", which the case failed because it also required "20:00". The question asks only
+  when the shop opens, so I dropped that requirement and instead forbid the winter "09:00".
 - **The agent offered to cancel.** A manual run showed "Would you like me to proceed with
   the cancellation?". The agent cannot cancel bookings, so this is a false promise. The
   prompt now says it only gives information and the customer contacts staff to cancel, and
@@ -140,14 +163,24 @@ version of the suite, then 12/14 and 13/14 once I made it stricter (see below).
   and the model seemed to infer Polish from the context (+48 phone number, Warsaw time).
   Changing the rule to "the language of the customer's latest message (an English question
   gets an English answer)" fixed it.
+- **Checks that were too loose.** A review of the checker found three ways a wrong answer
+  could pass: any number counted as an amount (so "16 years" satisfied an amount of 16),
+  phrases matched inside other words (`8:00` inside `18:00`), and a run that hit the step
+  limit could pass a refusal case through the fallback text. All three are fixed and tested;
+  both models still pass every case under the stricter rules.
+- **Model arithmetic slips through.** For CW-1003, Grok wrote "total paid €64", a sum it
+  made itself from the booking (12 + 2 + 50). The number is right, but it is exactly what the
+  prompt forbids, and no check catches it because it is not a required amount. This is the
+  limitation below about grounding, seen in practice.
 - **Weak refusal check.** Both models often add the staff contact even to normal answers,
   so "contact present" says little about a real refusal. `capital_australia` is also
   guarded by `must_not_contain = ["Canberra"]`; `poem_off_topic` has no such guard and would
   still pass if the model wrote the poem.
 
-**Model comparison.** With the stricter suite, Gemini is ahead on quality: it gets the
-seasonal opening hours right, and Grok does not. The evaluation is still small, so this is
-one data point, not a ranking. Other differences:
+**Model comparison.** Before the opening-hours tool, Gemini was ahead on quality: it applied
+the season correctly from the prompt and Grok did not. With the rule in code both pass every
+case, which is the point: the less the answer depends on the model's reasoning, the less the
+choice of model matters. Other differences:
 
 - **Latency.** Grok was about 20× faster. The Gemini free tier spends most of its time on
   rate limiting and retries (429/503 errors are common at peak times).
@@ -184,20 +217,18 @@ Examples where its output was wrong:
   authentication, so anyone who knows a booking number can see that booking.
 - Grounding relies on the prompt: nothing in the code stops the model from adding a fact
   that is not in the tool results. Amounts are safe only as long as the model copies them.
-- The evaluation is small (14 cases, one run per model) and refusal detection is weak.
-- Date reasoning depends on the model: Grok still applies the winter opening hours in June.
+- The evaluation is small (21 cases, one run per model) and refusal detection is weak.
+- Opening hours exist twice: in `faq.md` and as constants in `hours.py`. A change to the
+  policy has to be made in both places; tests pin the current rules.
 
 ## Next steps
 
 - Harder evaluation cases:
-  - a refund question without a booking number, where the agent must ask for it,
-  - mixed questions, and questions in Polish,
-  - prompt injection inside a question,
-  - cancellation after the rental start,
+  - mixed questions that need several tools,
+  - more prompt-injection variants (e.g. inside a fake booking number),
+  - a hypothetical cancellation after the rental start,
   - several runs per case to measure variance.
 - A stronger check that each amount in the answer matches the amounts the tools returned.
 - Show refunds in a fixed template built in code, so the model cannot misquote money.
-- Resolve date-dependent rules in code (an opening-hours tool that takes a date), which
-  would fix the remaining Grok failure.
 - Semantic or hybrid search for policies, and a real `Europe/Warsaw` time zone.
 - Plain-text output mode for Markdown-heavy models in the terminal.
