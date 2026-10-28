@@ -23,6 +23,8 @@ DEFAULT_PROVIDER = "gemini"
 class ProviderConfig:
     base_url: str
     api_key_env: str
+    # Per provider, so switching --provider never sends one vendor's model name to another.
+    model_env: str
     default_model: str
 
 
@@ -31,11 +33,13 @@ PROVIDERS: dict[str, ProviderConfig] = {
     "gemini": ProviderConfig(
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key_env="GEMINI_API_KEY",
+        model_env="GEMINI_MODEL",
         default_model="gemini-3.8-flash",
     ),
     "grok": ProviderConfig(
         base_url="https://api.x.ai/v1",
         api_key_env="XAI_API_KEY",
+        model_env="XAI_MODEL",
         default_model="grok-4.20-0309-non-reasoning",
     ),
 }
@@ -75,5 +79,5 @@ def load_llm_settings(
         provider=name,
         base_url=config.base_url,
         api_key=api_key,
-        model=env.get("LLM_MODEL") or config.default_model,
+        model=env.get(config.model_env) or config.default_model,
     )

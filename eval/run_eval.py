@@ -79,6 +79,7 @@ def _fence(text: str) -> str:
 
 def format_report(results: list[CaseResult], meta: ReportMeta) -> str:
     passed = sum(result.passed for result in results)
+    tool_calls = sum(len(result.tool_names) for result in results)
     lines = [
         "# Evaluation results",
         "",
@@ -87,6 +88,7 @@ def format_report(results: list[CaseResult], meta: ReportMeta) -> str:
         f"- Run at (UTC): {meta.run_at.strftime('%Y-%m-%d %H:%M:%S')}",
         f"- Agent clock (`NOW`): {meta.now.isoformat()}",
         f"- Total time: {meta.total_seconds:.1f} s",
+        f"- Tool calls: {tool_calls} ({tool_calls / max(len(results), 1):.1f} per case)",
         "",
         f"**Passed: {passed}/{len(results)}**",
         "",

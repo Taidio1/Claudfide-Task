@@ -16,13 +16,15 @@ def test_load_settings_defaults_to_gemini() -> None:
 
 
 def test_model_override() -> None:
-    settings = load_llm_settings(env={"GEMINI_API_KEY": "x", "LLM_MODEL": "gemini-3.5-flash-lite"})
+    settings = load_llm_settings(
+        env={"GEMINI_API_KEY": "x", "GEMINI_MODEL": "gemini-3.5-flash-lite"}
+    )
 
     assert settings.model == "gemini-3.5-flash-lite"
 
 
 def test_empty_values_are_treated_as_unset() -> None:
-    env = {"GEMINI_API_KEY": "x", "LLM_PROVIDER": "", "LLM_MODEL": ""}
+    env = {"GEMINI_API_KEY": "x", "LLM_PROVIDER": "", "GEMINI_MODEL": ""}
 
     settings = load_llm_settings(env=env)
 
@@ -44,3 +46,9 @@ def test_missing_key_raises_config_error() -> None:
 def test_unknown_provider_raises() -> None:
     with pytest.raises(ConfigError, match="nope"):
         load_llm_settings("nope", {})
+
+
+def test_model_override_is_per_provider() -> None:
+    env = {"XAI_API_KEY": "k", "GEMINI_MODEL": "gemini-3.5-flash-lite"}
+
+    assert load_llm_settings("grok", env).model == "grok-4.20-0309-non-reasoning"
