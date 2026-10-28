@@ -12,7 +12,9 @@
 
 [[case]]
 id = "opening_hours_saturday"
-question = "What time are you open on Saturday? It's June."
+# Verbatim from the task's README: the season must come from the agent's clock (June),
+# an earlier version hinted "It's June" in the question and hid a real failure.
+question = "What time do you open on Saturday?"
 expect_tools = ["search_policies"]
 must_contain = ["20:00"]
 must_contain_any = ["08:00", "8:00"]
@@ -28,6 +30,9 @@ id = "refund_cw1002"
 question = "I want to cancel booking CW-1002. How much money will I get back?"
 expect_tools = ["calculate_refund"]
 must_contain_amounts = [340]
+# The agent only informs; offering to perform the cancellation is a false promise.
+# ("To proceed with the cancellation, please contact our staff" is the correct answer.)
+must_not_contain = ["would you like me to", "shall i cancel", "i can cancel", "i will cancel", "i'll cancel"]
 
 [[case]]
 id = "refund_cw1004_voucher"
