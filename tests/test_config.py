@@ -11,14 +11,14 @@ def test_load_settings_defaults_to_gemini() -> None:
     settings = load_llm_settings(env={"GEMINI_API_KEY": "x"})
 
     assert settings.provider == "gemini"
-    assert settings.model == "gemini-2.5-flash"
+    assert settings.model == "gemini-3.8-flash"
     assert settings.api_key == "x"
 
 
 def test_model_override() -> None:
-    settings = load_llm_settings(env={"GEMINI_API_KEY": "x", "LLM_MODEL": "gemini-2.5-flash-lite"})
+    settings = load_llm_settings(env={"GEMINI_API_KEY": "x", "LLM_MODEL": "gemini-3.5-flash-lite"})
 
-    assert settings.model == "gemini-2.5-flash-lite"
+    assert settings.model == "gemini-3.5-flash-lite"
 
 
 def test_empty_values_are_treated_as_unset() -> None:
@@ -27,7 +27,7 @@ def test_empty_values_are_treated_as_unset() -> None:
     settings = load_llm_settings(env=env)
 
     assert settings.provider == "gemini"
-    assert settings.model == "gemini-2.5-flash"
+    assert settings.model == "gemini-3.8-flash"
 
 
 def test_explicit_provider_beats_environment() -> None:

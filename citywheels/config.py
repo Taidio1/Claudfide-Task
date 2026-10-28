@@ -31,12 +31,12 @@ PROVIDERS: dict[str, ProviderConfig] = {
     "gemini": ProviderConfig(
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key_env="GEMINI_API_KEY",
-        default_model="gemini-2.5-flash",
+        default_model="gemini-3.8-flash",
     ),
     "grok": ProviderConfig(
         base_url="https://api.x.ai/v1",
         api_key_env="XAI_API_KEY",
-        default_model="grok-3-mini",
+        default_model="grok-4.20-0309-non-reasoning",
     ),
 }
 
