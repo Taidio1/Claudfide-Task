@@ -2,40 +2,53 @@
 
 - Provider: grok
 - Model: grok-4.20-0309-non-reasoning
-- Run at (UTC): 2026-10-28 18:21:31
+- Run at (UTC): 2026-10-28 18:49:04
 - Agent clock (`NOW`): 2026-06-10T09:00:00+02:00
-- Total time: 27.9 s
-- Tool calls: 19 (1.4 per case)
+- Total time: 30.2 s
+- Tool calls: 19 (1.3 per case)
 
-**Passed: 13/14**
+**Passed: 15/15**
 
 | id | result | failure reasons | tools called | time (s) |
 | --- | --- | --- | --- | --- |
-| opening_hours_saturday | FAIL | phrase missing: '20:00'; none of the phrases present: '08:00', '8:00' | search_policies | 1.4 |
-| ebike_day_price | pass |  | search_policies | 1.6 |
+| opening_hours_saturday | pass |  | get_opening_hours | 1.4 |
+| christmas_closed | pass |  | get_opening_hours | 1.4 |
+| ebike_day_price | pass |  | search_policies | 1.9 |
 | refund_cw1002 | pass |  | get_booking, calculate_refund | 2.2 |
-| refund_cw1004_voucher | pass |  | get_booking, calculate_refund | 2.7 |
-| refund_cw1010_boundary | pass |  | get_booking, calculate_refund | 2.5 |
-| age_14_ebike | pass |  | search_policies | 1.8 |
-| capital_australia | pass |  |  | 0.8 |
-| poem_off_topic | pass |  | search_policies | 1.9 |
-| unknown_booking | pass |  | get_booking | 1.5 |
+| refund_cw1004_voucher | pass |  | get_booking, calculate_refund | 2.4 |
+| refund_cw1010_boundary | pass |  | calculate_refund | 2.6 |
+| age_14_ebike | pass |  | search_policies | 1.9 |
+| capital_australia | pass |  |  | 0.9 |
+| poem_off_topic | pass |  | search_policies | 1.8 |
+| unknown_booking | pass |  | get_booking | 1.7 |
 | cancel_completed_cw1006 | pass |  | get_booking, calculate_refund | 2.1 |
-| ebike_deposit | pass |  | search_policies | 2.0 |
-| storm_refund | pass |  | search_policies | 2.2 |
+| ebike_deposit | pass |  | search_policies | 1.6 |
+| storm_refund | pass |  | search_policies | 2.7 |
 | sell_bikes | pass |  | search_policies | 1.2 |
-| followup_cancel_tomorrow | pass |  | get_booking, calculate_refund, calculate_refund | 3.9 |
+| followup_cancel_tomorrow | pass |  | get_booking, calculate_refund, calculate_refund | 4.2 |
 
 ## Answers
 
-<details><summary>opening_hours_saturday (FAIL)</summary>
+<details><summary>opening_hours_saturday (pass)</summary>
 
 **Question 1:** What time do you open on Saturday?
 
 **Answer:**
 
 ```text
-We open at **09:00** on Saturdays (November to March schedule applies in June).
+We open at 08:00 on Saturday.
+```
+
+</details>
+
+<details><summary>christmas_closed (pass)</summary>
+
+**Question 1:** Are you open on 25 December?
+
+**Answer:**
+
+```text
+No, we are closed on 25 December 2026.
 ```
 
 </details>
@@ -47,9 +60,9 @@ We open at **09:00** on Saturdays (November to March schedule applies in June).
 **Answer:**
 
 ```text
-The cost to rent an electric bike for a whole day (up to 24 hours) is **40 EUR**. 
+The cost to rent an electric bike for a whole day is **40 EUR**.
 
-Rentals longer than 6 hours are automatically charged at the day rate. A deposit of 150 EUR is also required.
+A day rental covers up to 24 hours from the start time (rentals over 6 hours are automatically charged at the day rate). A deposit of 150 EUR is also required per e-bike.
 ```
 
 </details>
@@ -64,12 +77,12 @@ Rentals longer than 6 hours are automatically charged at the day rate. A deposit
 For booking **CW-1002**, you will receive a total refund of **€340** if you cancel now:
 
 - €40 (50% of the €80 rental price)
-- €0 of the booking fee
-- Full €300 deposit
+- €0 (booking fee is non-refundable)
+- €300 (full deposit)
 
 The refund will be issued to the same **card** within 5 working days.
 
-To proceed with the cancellation, please contact our staff at help@citywheels.example or +48 000 000 000.
+To proceed with the cancellation, please contact our staff.
 ```
 
 </details>
@@ -81,14 +94,9 @@ To proceed with the cancellation, please contact our staff at help@citywheels.ex
 **Answer:**
 
 ```text
-If you cancel booking **CW-1004** now (2026-06-10), you will receive a full refund of **€73.00** as a **voucher** (the original payment method was a voucher).
+If you cancel booking **CW-1004** now (240 hours before the start), you will receive a full refund of **€73.00** as a **voucher** (the original rental price of €23 + deposit of €50; the €2 booking fee is not refunded).
 
-This includes:
-- €23.00 rental price (100% refunded)
-- €0.00 booking fee (non-refundable)
-- €50.00 deposit (refunded in full)
-
-The booking is confirmed and can be cancelled without penalty at this time (240 hours before the start date). To proceed with cancellation, please contact our staff.
+The booking is confirmed and can be cancelled. To proceed, please contact our staff.
 ```
 
 </details>
@@ -100,12 +108,14 @@ The booking is confirmed and can be cancelled without penalty at this time (240 
 **Answer:**
 
 ```text
-If you cancel booking **CW-1010** right now (2026-06-10 at 09:00), you would receive a **total refund of 170.00 EUR**:
+If you cancel booking **CW-1010** right now (2026-06-10 at 09:00), you would receive a **total refund of €170**:
 
-- 20.00 EUR (50% of the 40.00 EUR rental price)
-- 150.00 EUR deposit (full amount)
+- €20 (50% of the €40 rental price, as it is exactly 24 hours before the start)
+- €150 deposit (fully refunded)
 
-This will be refunded to your original **card** within 5 working days. The booking is confirmed and can still be cancelled.
+The refund would be issued to the same **card** within 5 working days.
+
+Note: You cannot cancel through me — please contact our staff to proceed.
 ```
 
 </details>
@@ -117,9 +127,9 @@ This will be refunded to your original **card** within 5 working days. The booki
 **Answer:**
 
 ```text
-No, your 14-year-old son cannot rent an electric bike. The minimum age for electric bikes is 16 (with a parent or guardian to sign if under 18). 
+No, your 14-year-old son cannot rent an electric bike. The minimum age for e-bikes is 16 (with a parent/guardian signature required for anyone under 18). 
 
-He could rent a city bike (from age 13, with a parent/guardian signature). Let me know if you'd like more details!
+He could rent a regular city bike from age 13 under the same conditions. Let me know if you'd like more details!
 ```
 
 </details>
@@ -131,7 +141,7 @@ He could rent a city bike (from age 13, with a parent/guardian signature). Let m
 **Answer:**
 
 ```text
-I cannot help with that. Please contact staff at help@citywheels.example or +48 000 000 000 for any questions.
+I cannot help with that. Please contact staff at help@citywheels.example or +48 000 000 000 for any other questions.
 ```
 
 </details>
@@ -143,7 +153,7 @@ I cannot help with that. Please contact staff at help@citywheels.example or +48 
 **Answer:**
 
 ```text
-I'm sorry, but I can only help with questions related to CityWheels bike rentals, policies, bookings, or similar topics. For anything else, please contact staff at help@citywheels.example or +48 000 000 000.
+I'm sorry, but I can only assist with CityWheels bike rental questions, bookings, policies, or opening hours. For anything else, please contact staff at help@citywheels.example or +48 000 000 000.
 ```
 
 </details>
@@ -167,9 +177,9 @@ I'm sorry, but no booking with the number CW-9999 was found. Could you please do
 **Answer:**
 
 ```text
-I'm sorry, but booking **CW-1006** has already been completed (it ended on 2026-06-07). It cannot be cancelled, and no refund is possible (total refund: €0.00).
+I'm sorry, but booking **CW-1006** has already been completed (it was for 2 kids' bikes on 2026-06-07). It cannot be cancelled, and no refund is possible (total refund: €0).
 
-If you have any other questions or need help with something else, let me know. For further assistance, contact staff at help@citywheels.example or +48 000 000 000.
+If you have any other questions or need help with something else, let me know.
 ```
 
 </details>
@@ -193,11 +203,11 @@ The deposit for an electric bike is **150 EUR** per bike. It must be paid with a
 **Answer:**
 
 ```text
-Yes, according to our policy, if there's a storm warning from the weather service on your rental day, you may qualify for a **full refund** (staff decide each case).  
+Yes, according to our policy, if there's a storm warning from the weather service on your rental day, you may qualify for a **full refund** (of the rental price; the booking fee is never refunded). However, staff must review and decide each case individually.
 
-Please contact our staff directly to request this:  
-- Email: help@citywheels.example  
-- Phone: +48 000 000 000 (open daily during shop hours)  
+Please contact our staff directly to request this:
+- Email: help@citywheels.example
+- Phone: +48 000 000 000 (during opening hours)
 
 If you have a booking number, feel free to share it for more details.
 ```
@@ -224,7 +234,7 @@ No, we only rent bikes.
 **Answer:**
 
 ```text
-If you cancel booking **CW-1007** tomorrow (2026-06-11 at 09:00, 24 hours before the start), you will receive a refund of **€168** to your card (within 5 working days). This includes 50% of the rental price (€18), €0 of the booking fee, and the €150 deposit.
+If you cancel booking **CW-1007** tomorrow (2026-06-11 at 09:00, 24 hours before the start), you would get **€168** back to your card (within 5 working days). This includes 50% of the rental price (€18) + the full €150 deposit (the €2 booking fee is non-refundable).
 ```
 
 </details>

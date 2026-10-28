@@ -15,9 +15,18 @@ id = "opening_hours_saturday"
 # Verbatim from the task's README: the season must come from the agent's clock (June),
 # an earlier version hinted "It's June" in the question and hid a real failure.
 question = "What time do you open on Saturday?"
-expect_tools = ["search_policies"]
-must_contain = ["20:00"]
+expect_tools = ["get_opening_hours"]
+# The question asks only when the shop opens, so "08:00" alone is a full answer; requiring
+# the closing time too failed a correct answer. The winter opening time must not appear.
 must_contain_any = ["08:00", "8:00"]
+must_not_contain = ["09:00", "9:00"]
+
+[[case]]
+id = "christmas_closed"
+# A holiday outside the current week: the agent has to pass a start date to the tool.
+question = "Are you open on 25 December?"
+expect_tools = ["get_opening_hours"]
+must_contain_any = ["closed", "not open", "won't be open", "will not be open"]
 
 [[case]]
 id = "ebike_day_price"

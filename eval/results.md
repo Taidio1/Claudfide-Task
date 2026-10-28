@@ -2,29 +2,30 @@
 
 - Provider: gemini
 - Model: gemini-3.5-flash-lite
-- Run at (UTC): 2026-10-28 18:35:05
+- Run at (UTC): 2026-10-28 18:50:12
 - Agent clock (`NOW`): 2026-06-10T09:00:00+02:00
-- Total time: 583.6 s
-- Tool calls: 13 (0.9 per case)
+- Total time: 147.7 s
+- Tool calls: 14 (0.9 per case)
 
-**Passed: 14/14**
+**Passed: 15/15**
 
 | id | result | failure reasons | tools called | time (s) |
 | --- | --- | --- | --- | --- |
-| opening_hours_saturday | pass |  | search_policies | 61.4 |
-| ebike_day_price | pass |  | search_policies | 42.7 |
-| refund_cw1002 | pass |  | calculate_refund | 63.5 |
-| refund_cw1004_voucher | pass |  | calculate_refund | 65.3 |
-| refund_cw1010_boundary | pass |  | calculate_refund | 61.1 |
-| age_14_ebike | pass |  | search_policies | 74.4 |
-| capital_australia | pass |  |  | 31.1 |
-| poem_off_topic | pass |  |  | 25.5 |
-| unknown_booking | pass |  | get_booking | 57.6 |
-| cancel_completed_cw1006 | pass |  | calculate_refund | 43.8 |
-| ebike_deposit | pass |  | search_policies | 18.5 |
-| storm_refund | pass |  | search_policies | 13.8 |
-| sell_bikes | pass |  | search_policies | 6.7 |
-| followup_cancel_tomorrow | pass |  | calculate_refund, calculate_refund | 18.0 |
+| opening_hours_saturday | pass |  | get_opening_hours | 13.5 |
+| christmas_closed | pass |  | get_opening_hours | 13.1 |
+| ebike_day_price | pass |  | search_policies | 12.1 |
+| refund_cw1002 | pass |  | calculate_refund | 9.8 |
+| refund_cw1004_voucher | pass |  | calculate_refund | 14.1 |
+| refund_cw1010_boundary | pass |  | calculate_refund | 11.0 |
+| age_14_ebike | pass |  | search_policies | 6.6 |
+| capital_australia | pass |  |  | 5.5 |
+| poem_off_topic | pass |  |  | 1.4 |
+| unknown_booking | pass |  | get_booking | 5.1 |
+| cancel_completed_cw1006 | pass |  | calculate_refund | 10.9 |
+| ebike_deposit | pass |  | search_policies | 4.0 |
+| storm_refund | pass |  | search_policies | 11.0 |
+| sell_bikes | pass |  | search_policies | 7.9 |
+| followup_cancel_tomorrow | pass |  | calculate_refund, calculate_refund | 21.9 |
 
 ## Answers
 
@@ -35,7 +36,19 @@
 **Answer:**
 
 ```text
-We are open from 08:00 to 20:00 on Saturdays (April to October).
+On Saturday, we open at 08:00 (and close at 20:00).
+```
+
+</details>
+
+<details><summary>christmas_closed (pass)</summary>
+
+**Question 1:** Are you open on 25 December?
+
+**Answer:**
+
+```text
+No, we are closed on 25 December.
 ```
 
 </details>
@@ -47,7 +60,7 @@ We are open from 08:00 to 20:00 on Saturdays (April to October).
 **Answer:**
 
 ```text
-Renting an electric bike costs 40 EUR per day (up to 24 hours). Please note that there is also a deposit of 150 EUR for electric bikes, which is returned in full when the bike is brought back on time and undamaged.
+Renting an electric bike costs 40 EUR per day.
 ```
 
 </details>
@@ -59,9 +72,9 @@ Renting an electric bike costs 40 EUR per day (up to 24 hours). Please note that
 **Answer:**
 
 ```text
-If you cancel now, you will receive a total refund of €340.00 (which includes €40.00 for the rental price and €300.00 for the deposit, while the €2.00 booking fee is non-refundable). 
+If you cancel booking CW-1002 now, you will receive a total refund of €340.00. This includes €40.00 for the rental (50% of the €80.00 rental price, as you are cancelling 33 hours before the start) and your €300.00 deposit. The booking fee of €2.00 is non-refundable. 
 
-The refund will be issued to your card within 5 working days. Please note that I cannot process cancellations directly; to complete the cancellation, please contact our staff at help@citywheels.example or +48 000 000 000.
+The refund will be credited to your card within 5 working days. Please note that I cannot process the cancellation myself—to cancel the booking, please contact our staff.
 ```
 
 </details>
@@ -73,9 +86,7 @@ The refund will be issued to your card within 5 working days. Please note that I
 **Answer:**
 
 ```text
-If you cancel booking CW-1004 now, you will receive a total refund of 73.00 EUR (which includes 23.00 EUR for the rental price and 50.00 EUR for the deposit; the 2.00 EUR booking fee is non-refundable). 
-
-The refund will be issued as a voucher (specifically, a new voucher of the same value, not as money), and the deposit is refunded the same way it was paid.
+If you cancel booking CW-1004 now, you will receive a total refund of 73.00 EUR (23.00 EUR for the rental price and 50.00 EUR for the deposit). The rental refund is provided as a voucher, and the deposit is refunded the same way it was paid.
 ```
 
 </details>
@@ -87,7 +98,9 @@ The refund will be issued as a voucher (specifically, a new voucher of the same 
 **Answer:**
 
 ```text
-If you cancel booking CW-1010 right now, you will receive a total refund of €170.00 (€20.00 for the rental and €150.00 for the deposit). The amount will be refunded to your card within 5 working days.
+If you cancel booking CW-1010 right now, you will receive a total refund of €170.00 (consisting of a €20.00 rental refund—which is 50% of the rental price—and your €150.00 deposit). 
+
+The refund will be credited to your card within 5 working days. Please note that I cannot process the cancellation myself; please contact our staff to complete it.
 ```
 
 </details>
@@ -99,7 +112,7 @@ If you cancel booking CW-1010 right now, you will receive a total refund of €1
 **Answer:**
 
 ```text
-Electric bikes are available for riders from 16 years old. However, for city bikes, the minimum age is 13 years old (riders under 18 need a parent or guardian to sign the rental). So your son can rent a city bike, but he would need to wait until he is 16 to rent an electric bike.
+Electric bikes can be rented from 16 years old. Since your son is 14, he cannot rent an electric bike yet, but he is welcome to rent a city bike (available from 13 years old, with a parent or guardian's signature).
 ```
 
 </details>
@@ -111,7 +124,7 @@ Electric bikes are available for riders from 16 years old. However, for city bik
 **Answer:**
 
 ```text
-I cannot help with that. For any questions unrelated to CityWheels, please contact our staff at help@citywheels.example or +48 000 000 000.
+I cannot help with that. For any further questions, please contact our staff at help@citywheels.example or +48 000 000 000.
 ```
 
 </details>
@@ -123,7 +136,7 @@ I cannot help with that. For any questions unrelated to CityWheels, please conta
 **Answer:**
 
 ```text
-I cannot help with that. For any further questions, please contact our staff at help@citywheels.example or +48 000 000 000.
+I cannot help with that. Please refer to staff: help@citywheels.example, +48 000 000 000.
 ```
 
 </details>
@@ -135,7 +148,7 @@ I cannot help with that. For any further questions, please contact our staff at 
 **Answer:**
 
 ```text
-Booking CW-9999 was not found. Please check the booking number and try again.
+I couldn't find a booking with the number CW-9999. Could you please check the booking number and try again?
 ```
 
 </details>
@@ -147,9 +160,9 @@ Booking CW-9999 was not found. Please check the booking number and try again.
 **Answer:**
 
 ```text
-I'm sorry, but booking CW-1006 has already been completed, so it cannot be cancelled. 
+I am sorry, but booking CW-1006 has already been completed and cannot be cancelled. 
 
-Please note that I can only provide information and cannot process cancellations myself. If you need further assistance, please contact our staff directly at help@citywheels.example or +48 000 000 000.
+If you need any further assistance, please contact our staff at help@citywheels.example or +48 000 000 000.
 ```
 
 </details>
@@ -173,11 +186,11 @@ The deposit for an electric bike is 150 EUR.
 **Answer:**
 
 ```text
-If the weather service issues a storm warning for the day of the rental, you may be eligible for a full refund. However, our staff decides each case individually, so you will need to contact them directly to arrange this. 
+If the weather service issues a storm warning for the day of your rental, you may be eligible for a full refund. However, the staff decide each case individually, so you will need to contact them directly to request it. 
 
 You can reach the staff at:
 - Email: help@citywheels.example
-- Phone: +48 000 000 000
+- Phone: +48 000 000 000 (every day while the shop is open)
 ```
 
 </details>
@@ -189,7 +202,7 @@ You can reach the staff at:
 **Answer:**
 
 ```text
-No, we do not sell bikes—we only rent them.
+No, we do not sell bikes. We only rent them!
 ```
 
 </details>
@@ -202,7 +215,7 @@ No, we do not sell bikes—we only rent them.
 **Answer:**
 
 ```text
-If you cancel tomorrow at the same time, you will receive a total refund of €168.00 (which includes €18.00 for the rental price and €150.00 for the deposit; the booking fee of €2.00 is non-refundable). The refund will be credited to your card within 5 working days.
+If you cancel tomorrow at the same time, you will receive a total refund of 168.00 EUR (which includes 18.00 EUR for the rental price and 150.00 EUR for the deposit; the booking fee of 2.00 EUR is non-refundable). The refund will be credited to your card within 5 working days.
 ```
 
 </details>
