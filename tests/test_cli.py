@@ -81,6 +81,27 @@ def test_interactive_mode_answers_until_exit(
     assert len(model.calls) == 1
 
 
+def test_interactive_mode_survives_llm_error(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FailsOnce(FakeChatModel):
+        def complete(self, messages: list[dict], tools: list[dict]) -> AssistantMessage:
+            if not self.calls:
+                self.calls.append(messages)
+                raise LLMError("LLM request failed: boom")
+            return super().complete(messages, tools)
+
+    inputs = iter(["First", "Second", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
+
+    code = main([], model=FailsOnce([AssistantMessage("Hello!")]))
+
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "Error: LLM request failed: boom" in captured.err
+    assert "Agent: Hello!" in captured.out
+
+
 def test_interactive_mode_ends_cleanly_on_eof(monkeypatch: pytest.MonkeyPatch) -> None:
     def raise_eof(_prompt: str = "") -> str:
         raise EOFError

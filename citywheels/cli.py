@@ -48,7 +48,12 @@ def _interactive(agent: Agent, verbose: bool) -> None:
             print("Agent: Conversation cleared.")
             continue
         print("Agent: ", end="")
-        _ask_and_print(agent, line, verbose)
+        try:
+            _ask_and_print(agent, line, verbose)
+        except LLMError as exc:
+            # One failed request (e.g. a rate limit) should not end the whole conversation.
+            print()
+            print(f"Error: {exc} Please try again.", file=sys.stderr)
 
 
 def main(argv: list[str] | None = None, model: ChatModel | None = None) -> int:

@@ -38,7 +38,17 @@ class Agent:
 
     def ask(self, question: str) -> AgentResult:
         # History (incl. tool results) is kept so follow-ups know the booking number.
+        turn_start = len(self._messages)
         self._messages.append({"role": "user", "content": question})
+        try:
+            return self._run_turn()
+        except Exception:
+            # A half-finished turn (e.g. tool calls without results) would make the
+            # provider reject every later request, so the failed turn is dropped.
+            del self._messages[turn_start:]
+            raise
+
+    def _run_turn(self) -> AgentResult:
         trace: list[ToolCall] = []
 
         for _ in range(self._max_steps):

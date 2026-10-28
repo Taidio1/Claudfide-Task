@@ -1,8 +1,11 @@
+import copy
 import json
+
+import pytest
 
 from citywheels.agent import FALLBACK_ANSWER, MAX_STEPS, Agent
 from citywheels.config import NOW, STAFF_EMAIL, STAFF_PHONE
-from citywheels.llm import AssistantMessage, ToolCall
+from citywheels.llm import AssistantMessage, LLMError, ToolCall
 from citywheels.prompts import build_system_prompt
 from citywheels.tools import Toolbox
 from tests.fakes import FakeChatModel
@@ -111,6 +114,28 @@ def test_system_prompt_contains_now_and_contact() -> None:
     assert STAFF_PHONE in prompt
     for tool in ("search_policies", "get_booking", "calculate_refund"):
         assert tool in prompt
+
+
+def test_failed_turn_is_dropped_from_history() -> None:
+    class FailsOnSecondCall(FakeChatModel):
+        def complete(self, messages: list[dict], tools: list[dict]) -> AssistantMessage:
+            if len(self.calls) == 1:
+                self.calls.append(copy.deepcopy(messages))
+                raise LLMError("LLM request failed: boom")
+            return super().complete(messages, tools)
+
+    model = FailsOnSecondCall([tool_reply(refund_call()), AssistantMessage("Hello again")])
+    agent = Agent(model, Toolbox.from_data(), SYSTEM_PROMPT)
+
+    with pytest.raises(LLMError):
+        agent.ask("Refund for CW-1002?")
+    agent.ask("Hi")
+
+    # Neither the question nor its orphan tool call may reach the next request.
+    assert model.calls[-1] == [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": "Hi"},
+    ]
 
 
 def test_step_limit_keeps_history_valid() -> None:
