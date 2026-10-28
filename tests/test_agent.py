@@ -112,7 +112,7 @@ def test_system_prompt_contains_now_and_contact() -> None:
     assert NOW.strftime("%A") in prompt
     assert STAFF_EMAIL in prompt
     assert STAFF_PHONE in prompt
-    for tool in ("search_policies", "get_booking", "calculate_refund"):
+    for tool in ("search_policies", "get_booking", "calculate_refund", "get_opening_hours"):
         assert tool in prompt
 
 

@@ -122,3 +122,31 @@ def test_handler_type_error_is_not_swallowed(
     monkeypatch.setitem(toolbox._handlers, "get_booking", buggy)
     with pytest.raises(TypeError):
         toolbox.execute("get_booking", '{"booking_id": "CW-1001"}')
+
+
+def test_get_opening_hours_defaults_to_today(toolbox: Toolbox) -> None:
+    result = run(toolbox, "get_opening_hours", "")
+    assert result["source"] == "faq.md#When are you open?"
+    assert result["days"][0]["date"] == "2026-06-10"
+    saturday = next(day for day in result["days"] if day["weekday"] == "Saturday")
+    assert saturday == {
+        "date": "2026-06-13",
+        "weekday": "Saturday",
+        "open": True,
+        "hours": "08:00–20:00",
+    }
+
+
+def test_get_opening_hours_from_given_date(toolbox: Toolbox) -> None:
+    result = run(toolbox, "get_opening_hours", '{"start_date": "2026-12-25"}')
+    assert result["days"][0] == {
+        "date": "2026-12-25",
+        "weekday": "Friday",
+        "open": False,
+        "hours": None,
+    }
+
+
+def test_get_opening_hours_invalid_date_returns_error(toolbox: Toolbox) -> None:
+    result = run(toolbox, "get_opening_hours", '{"start_date": "next saturday"}')
+    assert "not a valid ISO 8601 date" in result["error"]

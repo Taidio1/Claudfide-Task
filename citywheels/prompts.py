@@ -10,9 +10,10 @@ Current date and time: {now} ({weekday}, {month}). Use it for anything time-rela
 
 Rules:
 1. Answer only from tool results (policy documents and bookings), never from general \
-knowledge. Before answering a question about rules, prices, opening hours and the like, \
-call search_policies. When a rule depends on the date or season (for example opening \
-hours), apply it to the current date and give the answer that is valid now.
+knowledge. Before answering a question about rules, prices and the like, call \
+search_policies. For opening hours call get_opening_hours: it has already applied the \
+season and holidays, so give the hours it returns for the day asked about. For other \
+rules that depend on the date or season, apply them to the current date.
 2. For a question about a booking, call get_booking. Never invent booking details. \
 If the customer did not give a booking number, ask for it.
 3. For any refund or cancellation amount, call calculate_refund and copy the amounts \

@@ -8,6 +8,7 @@ from typing import Any, Self
 
 from citywheels.bookings import BookingRepository
 from citywheels.config import BOOKINGS_PATH, NOW, POLICIES_DIR
+from citywheels.hours import HOURS_SOURCE, InvalidDateError, parse_date, week_from
 from citywheels.policies import PolicyIndex
 from citywheels.refund import CancellationTimeError, calculate_refund, parse_cancel_at
 
@@ -86,6 +87,28 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_opening_hours",
+            "description": (
+                "Opening hours for 7 days in a row, with season and holidays already applied. "
+                "Use it for any question about when the shop is open."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "start_date": {
+                        "type": "string",
+                        "description": (
+                            "Optional first day as YYYY-MM-DD, for a day more than a week "
+                            "ahead, e.g. 2026-12-25. Omit to start today."
+                        ),
+                    }
+                },
+            },
+        },
+    },
 ]
 
 
@@ -101,6 +124,7 @@ class Toolbox:
             "search_policies": self.search_policies,
             "get_booking": self.get_booking,
             "calculate_refund": self.calculate_refund,
+            "get_opening_hours": self.get_opening_hours,
         }
 
     @classmethod
@@ -137,6 +161,10 @@ class Toolbox:
         parsed = None if cancel_at is None else parse_cancel_at(cancel_at, self._now.tzinfo)
         return {"found": True, **calculate_refund(booking, self._now, parsed).to_dict()}
 
+    def get_opening_hours(self, start_date: str | None = None) -> dict[str, Any]:
+        start = self._now.date() if start_date is None else parse_date(start_date)
+        return {"source": HOURS_SOURCE, "days": [day.to_dict() for day in week_from(start)]}
+
     def execute(self, name: str, arguments: str) -> str:
         """Run a tool and return a JSON string; model mistakes become `{"error": ...}`.
 
@@ -166,7 +194,7 @@ class Toolbox:
                 return _dump({"error": f"Argument '{arg_name}' must be a string."})
         try:
             return _dump(handler(*bound.args, **bound.kwargs))
-        except CancellationTimeError as exc:
+        except (CancellationTimeError, InvalidDateError) as exc:
             return _dump({"error": str(exc)})
 
 
